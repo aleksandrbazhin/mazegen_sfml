@@ -1,0 +1,3 @@
+[submodule "mazegen"]
+	path = mazegen
+	url = https://github.com/aleksandrbazhin/mazegen.git
