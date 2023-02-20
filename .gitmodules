@@ -1,3 +1,6 @@
 [submodule "mazegen"]
 	path = mazegen
 	url = https://github.com/aleksandrbazhin/mazegen.git
+[submodule "imgui"]
+	path = imgui
+	url = https://github.com/ocornut/imgui
