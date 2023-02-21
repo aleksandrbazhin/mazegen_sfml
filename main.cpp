@@ -1,4 +1,8 @@
+#include "imgui.h" // necessary for ImGui::*, imgui-SFML.h doesn't include imgui.h
+#include "imgui-SFML.h" // for ImGui::SFML::* functions and SFML-specific overloads
+
 #include <SFML/Graphics.hpp>
+
 #include <unordered_map>
 #include <random>
 #include <chrono>
@@ -65,7 +69,8 @@ std::unordered_map<int, sf::Color> get_random_region_colors(
 float chance = 0.0;
 bool trigger = false;
 
-void render_game(sf::RenderWindow &window) {
+
+sf::VertexArray generate_maze() {
     mazegen::EXTRA_CONNECTION_CHANCE = 0.0;
     mazegen::WIGGLE_CHANCE = 0.3;
     mazegen::DEADEND_CHANCE = chance;
@@ -85,7 +90,7 @@ void render_game(sf::RenderWindow &window) {
     mazegen::PointSet constraints {{1, 1}, {WIDTH - 2, HEIGHT - 2}};
     auto grid = gen.generate(WIDTH, HEIGHT, constraints);
     auto doors = gen.get_doors();
-    // auto hall_colors = get_random_region_colors(gen.get_halls());
+
     auto hall_colors = get_random_region_colors(gen.get_halls(), true, SEED);
 
     sf::VertexArray map_vertices;
@@ -116,48 +121,7 @@ void render_game(sf::RenderWindow &window) {
             }
         }
     }
-    window.clear();
-    window.draw(map_vertices, &floor_texture);
-    
-    // sf::Font font;
-    // if (font.loadFromFile("assets/RobotoMono-Bold.ttf")) {
-    //     for (int y = 0; y < grid.size(); y++) {
-    //         for (int x = 0; x < grid[0].size(); x++) {
-    //             if (grid[y][x] != mazegen::NOTHING_ID) {
-    //                 sf::Text text;
-    //                 text.setPosition(x * TILE_SIZE + 2, y * TILE_SIZE + 2);
-    //                 text.setFont(font); // font is a sf::Font
-    //                 text.setString(std::to_string(x) + "," + std::to_string(y));
-    //                 text.setCharacterSize(10); // in pixels, not points!
-    //                 // text.setFillColor(sf::Color::Red);
-    //                 // text.setStyle(sf::Text::Bold | sf::Text::Underlined);
-    //                 window.draw(text);
-    //             }
-    //         }
-    //     }
-    // }
-
-
-
-    // sf::Font font;
-    // if (font.loadFromFile("assets/RobotoMono-Bold.ttf")) {
-    //     for (int y = 0; y < grid.size(); y++) {
-    //         for (int x = 0; x < grid[0].size(); x++) {
-    //             if (grid[y][x] != mapgen::NOTHING_ID) {
-    //                 sf::Text text;
-    //                 text.setPosition(x * TILE_SIZE + 2, y * TILE_SIZE + 2);
-    //                 text.setFont(font); // font is a sf::Font
-    //                 text.setString(std::to_string(grid[y][x]));
-    //                 text.setCharacterSize(11); // in pixels, not points!
-    //                 // text.setFillColor(sf::Color::Red);
-    //                 // text.setStyle(sf::Text::Bold | sf::Text::Underlined);
-    //                 window.draw(text);
-    //             }
-    //         }
-    //     }
-    // }
-
-    window.display();
+    return map_vertices;
 }
 
 
@@ -165,13 +129,20 @@ int main()
 {
     prepare();
     sf::RenderWindow window(sf::VideoMode(WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE), "Map");
-    render_game(window);
+    // render_game(window);
+
+    bool imgui_ok = ImGui::SFML::Init(window);
+    sf::Clock deltaClock;
+
+    sf::VertexArray maze_vertices = generate_maze();
+
     while (window.isOpen())
     {
-        bool is_render_needed = false;
+        bool is_rebuild_needed = false;
         sf::Event event;
         while (window.pollEvent(event))
         {
+            ImGui::SFML::ProcessEvent(window, event);
             switch (event.type)
             {
                 case sf::Event::Closed:
@@ -181,20 +152,33 @@ int main()
                     if (event.key.code == sf::Keyboard::Escape) {
                         window.close();
                     } else {
-                        is_render_needed = true;
+                        is_rebuild_needed = true;
                     }
                     break;
             }
         }
-        if (is_render_needed) {
+
+        if (is_rebuild_needed) {
             std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-            render_game(window);
+            maze_vertices = generate_maze();
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             std::cout << "Generated a " << WIDTH << "x" << HEIGHT << " maze in " 
                 << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() 
                 << " ms" << std::endl;
         }
+
+        ImGui::SFML::Update(window, deltaClock.restart());
+        ImGui::Begin("Hello, world!");
+        ImGui::Button("Look at this pretty button");
+        ImGui::End();
+
+        window.clear();
+        window.draw(maze_vertices, &floor_texture);
+        ImGui::SFML::Render(window);
+        window.display();
     }
+
+    ImGui::SFML::Shutdown();
 
     return 0;
 }
