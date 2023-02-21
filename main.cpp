@@ -26,22 +26,15 @@
 // const int ROOM_SIZE_MIN = 15;
 // const int ROOM_SIZE_MAX = 59;
 
-const int TILE_SIZE = 32;
-const int HEIGHT = 27;
-const int WIDTH = 43;
-const int ROOMS = 15;
-const int ROOM_SIZE_MIN = 5;
-const int ROOM_SIZE_MAX = 7;
+int TILE_SIZE = 32;
+int HEIGHT = 27;
+int WIDTH = 43;
+bool USE_FIXED_SEED = false;
+// int ROOMS = 15;
+// int ROOM_SIZE_MIN = 5;
+// int ROOM_SIZE_MAX = 7;
 
 
-
-sf::Texture floor_texture;
-
-void prepare() {
-    if (!floor_texture.loadFromFile("assets/cell.png"))
-        return;
-    floor_texture.setRepeated(true);
-}
 
 
 template <typename T>
@@ -66,27 +59,24 @@ std::unordered_map<int, sf::Color> get_random_region_colors(
     return color_map;
 }
 
-float chance = 0.0;
-bool trigger = false;
-
 
 sf::VertexArray generate_maze() {
-    mazegen::EXTRA_CONNECTION_CHANCE = 0.0;
-    mazegen::WIGGLE_CHANCE = 0.3;
-    mazegen::DEADEND_CHANCE = chance;
+    // mazegen::EXTRA_CONNECTION_CHANCE = 0.0;
+    // mazegen::WIGGLE_CHANCE = 0.3;
+    // mazegen::DEADEND_CHANCE = 0.0;
 
-    mazegen::ROOM_NUMBER = ROOMS;
-    mazegen::ROOM_SIZE_MIN = ROOM_SIZE_MIN;
-    mazegen::ROOM_SIZE_MAX = ROOM_SIZE_MAX;
+    // mazegen::ROOM_NUMBER = ROOMS;
+    // mazegen::ROOM_SIZE_MIN = ROOM_SIZE_MIN;
+    // mazegen::ROOM_SIZE_MAX = ROOM_SIZE_MAX;
 
-    mazegen::RECONNECT_DEADENDS_CHANCE = 0.0;
-    
-    chance += 0.1;
+    // mazegen::RECONNECT_DEADENDS_CHANCE = 0.0;
 
     int SEED = 101;
 
     auto gen = mazegen::Generator();
-    gen.set_seed(SEED);
+    if (USE_FIXED_SEED) {
+        gen.set_seed(SEED);
+    }
     mazegen::PointSet constraints {{1, 1}, {WIDTH - 2, HEIGHT - 2}};
     auto grid = gen.generate(WIDTH, HEIGHT, constraints);
     auto doors = gen.get_doors();
@@ -127,36 +117,67 @@ sf::VertexArray generate_maze() {
 
 int main()
 {
-    prepare();
-    sf::RenderWindow window(sf::VideoMode(WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE), "Map");
-    // render_game(window);
+    sf::Texture floor_texture;
+    if (!floor_texture.loadFromFile("assets/cell.png")) {
+        std::cout << "Error: Can not load floor texture!" << std::endl;
+        return 0;
+    }
+    floor_texture.setRepeated(true);
+
+    sf::RenderWindow window(sf::VideoMode(WIDTH * TILE_SIZE, HEIGHT * TILE_SIZE), "Mazegen SFML + ImGui demo");
 
     bool imgui_ok = ImGui::SFML::Init(window);
+
+    // float font_size = ImGui::GetFontSize() * 2.0f;
+    // ImGuiIO& io = ImGui::GetIO();
+    // io.Fonts->AddFontFromFileTTF("assets/RobotoMono-Bold.ttf", 16.0f);
+    // io.Fonts->Build();
+
     sf::Clock deltaClock;
-
     sf::VertexArray maze_vertices = generate_maze();
-
     while (window.isOpen())
     {
         bool is_rebuild_needed = false;
         sf::Event event;
         while (window.pollEvent(event))
         {
-            ImGui::SFML::ProcessEvent(window, event);
-            switch (event.type)
-            {
-                case sf::Event::Closed:
+            if (event.type == sf::Event::Closed || 
+                (event.type == sf::Event::KeyPressed && event.key.code == sf::Keyboard::Escape)) {
                     window.close();
                     break;
-                case sf::Event::KeyPressed:
-                    if (event.key.code == sf::Keyboard::Escape) {
-                        window.close();
-                    } else {
-                        is_rebuild_needed = true;
-                    }
-                    break;
             }
+            ImGui::SFML::ProcessEvent(window, event);
         }
+
+        ImGui::SFML::Update(window, deltaClock.restart());
+        ImGui::SetNextWindowSize({0.0f, 0.0f});
+
+        ImGui::Begin("Mazegen settings");
+
+        ImGui::Text("Size params");
+        ImGui::SliderInt("Maze width", &WIDTH, 15, 461);
+        ImGui::SliderInt("Maze height", &HEIGHT, 9, 241);
+        ImGui::SliderInt("Room attempts", &mazegen::ROOM_NUMBER, 1, 2000);
+        ImGui::SliderInt("Room size min", &mazegen::ROOM_SIZE_MIN, 3, 51);
+        ImGui::SliderInt("Room size max", &mazegen::ROOM_SIZE_MAX, 3, 51);
+
+        ImGui::Text("Render params");
+        ImGui::SliderInt("Tile size", &TILE_SIZE, 2, 32);
+
+        ImGui::Text("Generation params");
+        ImGui::Checkbox("Fixed seed", &USE_FIXED_SEED);
+        ImGui::SliderFloat("Deadends chance", &mazegen::DEADEND_CHANCE, 0.0f, 1.0f);
+        ImGui::SliderFloat("Extra connection chance", &mazegen::EXTRA_CONNECTION_CHANCE, 0.0f, 1.0f);
+        ImGui::SliderFloat("Wiggle chance", &mazegen::WIGGLE_CHANCE, 0.0f, 1.0f);
+        ImGui::SliderFloat("Reconnect chance", &mazegen::RECONNECT_DEADENDS_CHANCE, 0.0f, 1.0f);
+
+        if (ImGui::Button("Generate maze!")) {
+            is_rebuild_needed = true;
+        }
+        ImGui::End();
+
+
+
 
         if (is_rebuild_needed) {
             std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
@@ -166,11 +187,6 @@ int main()
                 << std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count() 
                 << " ms" << std::endl;
         }
-
-        ImGui::SFML::Update(window, deltaClock.restart());
-        ImGui::Begin("Hello, world!");
-        ImGui::Button("Look at this pretty button");
-        ImGui::End();
 
         window.clear();
         window.draw(maze_vertices, &floor_texture);
