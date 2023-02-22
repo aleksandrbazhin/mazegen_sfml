@@ -16,7 +16,6 @@ endif()
 find_package(OpenGL REQUIRED)
 
 
-
 # these headers will be installed alongside ImGui-SFML
 set(IMGUI_PUBLIC_HEADERS
   imconfig.h
