@@ -1,14 +1,12 @@
-#include "imgui.h" // necessary for ImGui::*, imgui-SFML.h doesn't include imgui.h
-#include "imgui-SFML.h" // for ImGui::SFML::* functions and SFML-specific overloads
-
+#include "imgui.h"
+#include "imgui-SFML.h"
 #include <SFML/Graphics.hpp>
-
 #include <unordered_map>
 #include <random>
 #include <chrono>
 #include <string>
-
 #include "mazegen/mazegen.hpp"
+
 
 int TILE_SIZE = 32;
 int HEIGHT = 31;
@@ -51,10 +49,7 @@ sf::VertexArray generate_maze(mazegen::Config& cfg, mazegen::PointSet& constrain
     cfg.ROOM_SIZE_MIN = fixed_cfg.ROOM_SIZE_MIN;
     cfg.ROOM_SIZE_MAX = fixed_cfg.ROOM_SIZE_MAX;
     SEED = gen.get_seed();
-    // gen.get_constraints();
-
     warnings.assign(gen.get_warnings());
-    // auto doors = gen.get_doors();
 
     auto hall_colors = get_random_region_colors(gen.get_halls(), SEED);
 
@@ -106,17 +101,14 @@ int main()
 
     bool imgui_ok = ImGui::SFML::Init(window);
 
+    std::string mazegen_warnings;
+    mazegen::Config maze_cfg{};
+    std::vector<std::array<int, 2>> constraints{{1, 1}, {WIDTH - 2, HEIGHT - 2}};
     sf::Clock deltaClock;
+    float generation_time = 0.0;
     sf::VertexArray maze_vertices;
     bool is_rebuild_needed = true;
-    float generation_time = 0.0;
 
-    std::string mazegen_warnings;
-
-    mazegen::Config maze_cfg{};
-    // mazegen::PointSet constraints{{1, 1}, {WIDTH - 2, HEIGHT - 2}};
-    std::vector<std::array<int, 2>> constraints{{1, 1}, {WIDTH - 2, HEIGHT - 2}};
-    
     while (window.isOpen())
     {
         sf::Event event;
@@ -153,7 +145,6 @@ int main()
         ImGui::Text("Generation params");
         ImGui::Checkbox("Fixed seed", &USE_FIXED_SEED);
         ImGui::InputScalar("Seed", ImGuiDataType_U32, &SEED);
-        // ImGui::InputInt("Seed", &SEED);
         ImGui::SliderFloat("Deadends chance", &maze_cfg.DEADEND_CHANCE, 0.0f, 1.0f);
         ImGui::SliderFloat("Extra connection chance", &maze_cfg.EXTRA_CONNECTION_CHANCE, 0.0f, 1.0f);
         ImGui::SliderFloat("Wiggle chance", &maze_cfg.WIGGLE_CHANCE, 0.0f, 1.0f);
@@ -166,7 +157,6 @@ int main()
             for (auto& p: constraints) {
                 ImGui::PushID(p.data());
                 ImGui::SliderInt2("Point", p.data(), 1, std::max(WIDTH - 2, HEIGHT - 2));
-                // ImGui::InputInt2("Point", p.data());
                 ImGui::PopID();
             }
             if (ImGui::Button("+")) {
@@ -198,25 +188,6 @@ int main()
             maze_sprite.setTexture(renderTexture.getTexture());
             maze_sprite.setPosition(0, 0);
             is_rebuild_needed = false;
-
-            // sf::Font font;
-            // if (font.loadFromFile("assets/RobotoMono-Bold.ttf")) {
-            //     for (int y = 0; y < grid.size(); y++) {
-            //         for (int x = 0; x < grid[0].size(); x++) {
-            //             if (grid[y][x] != mazegen::NOTHING_ID) {
-            //                 sf::Text text;
-            //                 text.setPosition(x * TILE_SIZE + 2, y * TILE_SIZE + 2);
-            //                 text.setFont(font); // font is a sf::Font
-            //                 text.setString(std::to_string(x) + "," + std::to_string(y));
-            //                 text.setCharacterSize(10); // in pixels, not points!
-            //                 // text.setFillColor(sf::Color::Red);
-            //                 // text.setStyle(sf::Text::Bold | sf::Text::Underlined);
-            //                 window.draw(text);
-            //             }
-            //         }
-            //     }
-            // }
-
         }
 
         window.clear();
@@ -224,8 +195,6 @@ int main()
         ImGui::SFML::Render(window);
         window.display();
     }
-
     ImGui::SFML::Shutdown();
-
     return 0;
 }
