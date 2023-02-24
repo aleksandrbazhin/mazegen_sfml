@@ -36,7 +36,7 @@ std::unordered_map<int, sf::Color> get_random_region_colors(
 }
 
 
-sf::VertexArray generate_maze(const mazegen::Config& cfg, std::string& warnings) {
+sf::VertexArray generate_maze(mazegen::Config& cfg, std::string& warnings) {
     auto gen = mazegen::Generator();
     if (USE_FIXED_SEED) {
         gen.set_seed(SEED);
@@ -45,6 +45,13 @@ sf::VertexArray generate_maze(const mazegen::Config& cfg, std::string& warnings)
     }
     mazegen::PointSet constraints {{1, 1}, {WIDTH - 2, HEIGHT - 2}};
     auto grid = gen.generate(WIDTH, HEIGHT, cfg, constraints);
+
+    HEIGHT = grid.size();
+    if (HEIGHT > 0) WIDTH = grid[0].size();
+
+    const auto& fixed_cfg = gen.get_config();
+    cfg.ROOM_SIZE_MIN = fixed_cfg.ROOM_SIZE_MIN;
+    cfg.ROOM_SIZE_MAX = fixed_cfg.ROOM_SIZE_MAX;
 
     warnings.assign(gen.get_warnings());
     // auto doors = gen.get_doors();
