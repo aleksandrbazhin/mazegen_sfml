@@ -36,22 +36,22 @@ std::unordered_map<int, sf::Color> get_random_region_colors(
 }
 
 
-sf::VertexArray generate_maze(mazegen::Config& cfg, std::string& warnings) {
+sf::VertexArray generate_maze(mazegen::Config& cfg, mazegen::PointSet& constraints, std::string& warnings) {
     auto gen = mazegen::Generator();
     if (USE_FIXED_SEED) {
         gen.set_seed(SEED);
     } else {
         SEED = gen.get_seed();
     }
-    mazegen::PointSet constraints {{1, 1}, {WIDTH - 2, HEIGHT - 2}};
     auto grid = gen.generate(WIDTH, HEIGHT, cfg, constraints);
 
     HEIGHT = grid.size();
     if (HEIGHT > 0) WIDTH = grid[0].size();
-
     const auto& fixed_cfg = gen.get_config();
     cfg.ROOM_SIZE_MIN = fixed_cfg.ROOM_SIZE_MIN;
     cfg.ROOM_SIZE_MAX = fixed_cfg.ROOM_SIZE_MAX;
+    SEED = gen.get_seed();
+    // gen.get_constraints();
 
     warnings.assign(gen.get_warnings());
     // auto doors = gen.get_doors();
@@ -114,6 +114,9 @@ int main()
     std::string mazegen_warnings;
 
     mazegen::Config maze_cfg{};
+    // mazegen::PointSet constraints{{1, 1}, {WIDTH - 2, HEIGHT - 2}};
+    std::vector<std::array<int, 2>> constraints{{1, 1}, {WIDTH - 2, HEIGHT - 2}};
+    
     while (window.isOpen())
     {
         sf::Event event;
@@ -142,38 +145,50 @@ int main()
         ImGui::SliderInt("Room size min", &maze_cfg.ROOM_SIZE_MIN, 3, 101);
         ImGui::SliderInt("Room size max", &maze_cfg.ROOM_SIZE_MAX, 3, 101);
 
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
         ImGui::Text("Render params");
         ImGui::SliderInt("Tile size", &TILE_SIZE, 1, 32);
 
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
         ImGui::Text("Generation params");
         ImGui::Checkbox("Fixed seed", &USE_FIXED_SEED);
-
         ImGui::InputInt("Seed", &SEED);
         ImGui::SliderFloat("Deadends chance", &maze_cfg.DEADEND_CHANCE, 0.0f, 1.0f);
         ImGui::SliderFloat("Extra connection chance", &maze_cfg.EXTRA_CONNECTION_CHANCE, 0.0f, 1.0f);
         ImGui::SliderFloat("Wiggle chance", &maze_cfg.WIGGLE_CHANCE, 0.0f, 1.0f);
         ImGui::SliderFloat("Reconnect chance", &maze_cfg.RECONNECT_DEADENDS_CHANCE, 0.0f, 1.0f);
 
-
-        ImGui::Text("Constraints");
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
+        ImGui::Text("Constrained points");
         ImGui::Checkbox("Constrain hall only", &maze_cfg.CONSTRAIN_HALL_ONLY);
-        // ImGui::SliderFloat("Reconnect chance", &maze_cfg.RECONNECT_DEADENDS_CHANCE, 0.0f, 1.0f);
+        if (ImGui::BeginChild("Constrained points", {0, 120}, true)) {
+            for (auto& p: constraints) {
+                ImGui::PushID(p.data());
+                ImGui::SliderInt2("Point", p.data(), 1, std::max(WIDTH - 2, HEIGHT - 2));
+                // ImGui::InputInt2("Point", p.data());
+                ImGui::PopID();
+            }
+            if (ImGui::Button("+")) {
+                constraints.push_back({1, 1});
+            }
+            ImGui::EndChild();
+        }
 
-
+        ImGui::Dummy(ImVec2(0.0f, 20.0f));
         if (ImGui::Button("Generate maze! (ENTER)")) {
             is_rebuild_needed = true;
         }
         ImGui::Text("Generated maze in %fms", generation_time);
-
         if (!mazegen_warnings.empty()) {
             ImGui::Text("Look!\n%s", mazegen_warnings.c_str());
         }
-
         ImGui::End();
 
         if (is_rebuild_needed) {
             std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
-            maze_vertices = generate_maze(maze_cfg, mazegen_warnings);
+            mazegen::PointSet maze_constraints(constraints.begin(), constraints.end());
+            maze_vertices = generate_maze(maze_cfg, maze_constraints, mazegen_warnings);
+
             std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
             generation_time = std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count() / 1000.0;
             renderTexture.clear();
@@ -183,7 +198,6 @@ int main()
             maze_sprite.setPosition(0, 0);
             is_rebuild_needed = false;
 
-            
             // sf::Font font;
             // if (font.loadFromFile("assets/RobotoMono-Bold.ttf")) {
             //     for (int y = 0; y < grid.size(); y++) {
