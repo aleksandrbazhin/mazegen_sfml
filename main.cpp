@@ -14,12 +14,12 @@ int TILE_SIZE = 32;
 int HEIGHT = 31;
 int WIDTH = 57;
 bool USE_FIXED_SEED = false;
-int SEED = 0;
+unsigned int SEED = 0;
 
 
 template <typename T>
 std::unordered_map<int, sf::Color> get_random_region_colors(
-    const std::vector<T>& regions, int seed = 0) {
+    const std::vector<T>& regions, unsigned int seed = 0) {
     std::mt19937 rng;
     if (USE_FIXED_SEED) {
         rng.seed(seed);
@@ -152,7 +152,8 @@ int main()
         ImGui::Dummy(ImVec2(0.0f, 20.0f));
         ImGui::Text("Generation params");
         ImGui::Checkbox("Fixed seed", &USE_FIXED_SEED);
-        ImGui::InputInt("Seed", &SEED);
+        ImGui::InputScalar("Seed", ImGuiDataType_U32, &SEED);
+        // ImGui::InputInt("Seed", &SEED);
         ImGui::SliderFloat("Deadends chance", &maze_cfg.DEADEND_CHANCE, 0.0f, 1.0f);
         ImGui::SliderFloat("Extra connection chance", &maze_cfg.EXTRA_CONNECTION_CHANCE, 0.0f, 1.0f);
         ImGui::SliderFloat("Wiggle chance", &maze_cfg.WIGGLE_CHANCE, 0.0f, 1.0f);
