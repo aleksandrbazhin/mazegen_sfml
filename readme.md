@@ -1,10 +1,10 @@
 # Mazegen SFML + ImGui demo 
 
-Demo program for the Mazegen library https://github.com/aleksandrbazhin/mazegen. Mazegen is a maze generation library based on Bob Nystrom's approach, decribed here https://journal.stuffwithstuff.com/2014/12/21/rooms-and-mazes/
+Demo program for the Mazegen library https://github.com/aleksandrbazhin/mazegen.   
+Mazegen is a maze generation library based on Bob Nystrom's approach, decribed here https://journal.stuffwithstuff.com/2014/12/21/rooms-and-mazes/  
+Binaries for Windows can be found on itch.io: https://aleksandrbazhin.itch.io/mazegen-maze-generator
 
 ![Screenshot](docs/screens/2.png)
-
-Binaries for Windows can be found here: https://aleksandrbazhin.itch.io/maze-generator-demo
 
 ## Compilation
 Build system is CMake. All dependcies except SFML are used as git submodules.
@@ -35,17 +35,15 @@ Should produce `mazegen-sfml` executable in the `build/` directory.
 
 ## Algorithm and UI parameters
 
-## Algorithm step-by-step
-
-Refer to https://github.com/aleksandrbazhin/mazegen readme for more details.
+Refer to https://github.com/aleksandrbazhin/mazegen readme for more details on the algorithm.
 
 The algorithm in short:
 1. Throws rooms randomly `Room place attempts` times. If the room overlaps others it is skipped`.
-2. Grows the maze by random walk, wiggling with a `wiggle chance`, from every point. Unlike the original it has usr-defined `constraints` which are first to be used as growth starting points.
+2. Grows the maze by random walk, wiggling with a `wiggle chance`, from every point. Unlike the original it has user-defined `constraints` which are first to be used as growth starting points.
 3. Connects rooms to all the adjacent halls by the doors once. Each hall region is connected at least once.
-4. If the room is connected to an already connected region, the door is removed with `1.0f - extra connection chance`.  Unlike the original, there is no flood fill to test for connectivity, instead inion-find is used for maze regions.
+4. If the room is connected to an already connected region, the door is removed with `1.0f - extra connection chance`.  Unlike the original, there is no flood fill to test for connectivity, instead union-find is used for maze regions.
 5. Deadends are removed with `1.0f - deadend chance`. If `deadend chance` is 0, the maze just connects all the constraints and the rooms without any blind halls.
-6. Deadends adjacent to the rooms are connected with `reconnect deadends chance`. This step is not in the original, but leads to a more natural looking maze - who would build a hall cloase to the room and not build a door?
+6. Deadends adjacent to the rooms are connected with `reconnect deadends chance`. This step is not in the original, but leads to a more natural looking maze - who would build a hall close to the room and not build a door?
 
 
 ## Roadmap
