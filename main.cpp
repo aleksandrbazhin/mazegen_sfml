@@ -41,10 +41,10 @@ sf::VertexArray generate_maze(mazegen::Config& cfg, mazegen::PointSet& constrain
     } else {
         SEED = gen.get_seed();
     }
-    auto grid = gen.generate(WIDTH, HEIGHT, cfg, constraints);
+    gen.generate(WIDTH, HEIGHT, cfg, constraints);
 
-    HEIGHT = grid.size();
-    if (HEIGHT > 0) WIDTH = grid[0].size();
+    HEIGHT = gen.maze_height();
+    WIDTH = gen.maze_width();
     const auto& fixed_cfg = gen.get_config();
     cfg.ROOM_SIZE_MIN = fixed_cfg.ROOM_SIZE_MIN;
     cfg.ROOM_SIZE_MAX = fixed_cfg.ROOM_SIZE_MAX;
@@ -56,9 +56,9 @@ sf::VertexArray generate_maze(mazegen::Config& cfg, mazegen::PointSet& constrain
     sf::VertexArray map_vertices;
     map_vertices.setPrimitiveType(sf::Quads);
     map_vertices.resize(HEIGHT * WIDTH * 4);
-    for (int y = 0; y < grid.size(); y++) {
-         for (int x = 0; x < grid[0].size(); x++) {
-            int id = grid[y][x];
+    for (int y = 0; y < HEIGHT; y++) {
+         for (int x = 0; x < WIDTH; x++) {
+            int id = gen.region_at(x, y);
             if (id  != mazegen::NOTHING_ID) {
                 sf::Vertex* quad = &map_vertices[(x + y * WIDTH) * 4];
 
