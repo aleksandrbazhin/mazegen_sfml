@@ -1,11 +1,11 @@
-#include "imgui.h"
-#include "imgui-SFML.h"
+#include <imgui.h>
+#include <imgui-SFML.h>
 #include <SFML/Graphics.hpp>
 #include <unordered_map>
 #include <random>
 #include <chrono>
 #include <string>
-#include "mazegen/mazegen.hpp"
+#include <mazegen.hpp>
 
 
 int TILE_SIZE = 32;
